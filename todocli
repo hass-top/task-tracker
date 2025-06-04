@@ -1,0 +1,311 @@
+#!/usr/bin/env php 
+<?php 
+echo " Starting task-cli processing\n" ; 
+// create a json file 
+$filename = "test.json" ;
+if (!file_exists ($filename)) { 
+    file_put_contents ( $filename , json_encode (  []  , JSON_PRETTY_PRINT )) ;
+    echo " json file install\n" ; 
+}
+else { 
+    echo " file existe\n " ;
+}
+
+// how to use it
+    echo "Usage:\n";
+    echo "  task-cli add \"Description\"\n";
+    echo "  task-cli update <id> \"New description\"\n";
+    echo "  task-cli delete <id>\n";
+    echo "  task-cli mark-in-progress <id>\n";
+    echo "  task-cli mark-done <id>\n";
+    echo "  task-cli list \n"; 
+    echo "  task-cli list [status]\n";
+echo "____________________________________\n" ;
+// tasks
+$tasks = json_decode ( file_get_contents ($filename  ), true ); 
+if (!$tasks) $tasks = [];
+if( isset($argv[1] ) == False ) { 
+    echo "didn't  have command\n " ; 
+    echo "Usage: php task-cli.php [command] [arguments...]\n";
+    exit;
+}
+else { 
+  switch ($argv[1] ) { 
+    case "add" :
+        if ($argc < 3 || $argc > 5) {
+            echo "Error: Invalid number of arguments for add.\n";
+            exit(1);
+        }
+        add($tasks, $filename , $argv ) ; 
+        break ; 
+    case "update" :
+        if ($argc < 4 || $argc > 6) {
+            echo "Error: Invalid number of arguments for update.\n";
+            exit(1);
+        }
+        update( $tasks ,$argv , $filename) ; 
+        break ; 
+        
+    case "delete" :
+        if ($argc != 3) {
+            echo "Error: Invalid number of arguments for delete.\n";
+            exit(1);
+        }
+        delete( $tasks ,$argv , $filename) ; 
+        break ; 
+        
+    case "mark-in-progress" :
+        if ($argc != 3) {
+            echo "Error: Invalid number of arguments for mark-in-progress.\n";
+            exit(1); }
+        mark_progress( $tasks ,$argv , $filename) ; 
+        break ; 
+    case "mark-done" :
+        if ($argc != 3) {
+            echo "Error: Invalid number of arguments for mark-done.\n";
+            exit(1);
+        }
+        mark_done( $tasks ,$argv , $filename) ; 
+        break ; 
+
+    case "list" :
+
+        if ( isset ( $argv[ 2]) == True ){ 
+        switch ($argv [ 2]) { 
+            case "done" : 
+                list_fun_done ($tasks ) ; 
+                break ; 
+            case "todo" :
+                list_fun_todo ($tasks ) ; 
+                break ; 
+
+            case "in-progress" : 
+                list_fun_in_progress ($tasks ) ; 
+                break ; 
+            default : 
+            echo "Error: Invalid status. Use 'done', 'todo', or 'in-progress'.\n";
+                    exit(1);
+        }
+    }else { 
+        list_fun ($tasks ) ; 
+    }
+     
+        break ;
+    default : 
+    
+    echo "Error: Unknown command '$argv[1]'.\n";
+        exit(1);
+    
+
+}
+}
+echo "\nthe final" ; 
+function add (&$tasks , $filename , $argv) { 
+    $desc = $argv[2] ?? null;
+    $priority = "medium"; // default
+    $due = null;
+
+    $id = count( $tasks) +1 ; 
+    $date = date("y-m-d H:i:s ") ; 
+    foreach ( $argv as $arg ){ 
+        if ( strpos ( $arg , "--priority=" )=== 0 ){ 
+            $priority = explode ('=' ,$arg ) [1] ; 
+        }
+        if (strpos ( $arg ,"--sort=") === 0 )
+{ 
+    $due =explode( '=', $arg)[1] ; 
+}    
+}
+    $tasks[] = [
+        "id" => $id ,
+        "description" => $desc,
+        "status"=> "todo",
+        "priority" => $priority,
+        "due" => $due,
+        "createdAt" =>$date , 
+        "updateAt" => $date 
+
+    ] ; 
+
+    file_put_contents( $filename , json_encode( $tasks ,JSON_PRETTY_PRINT)) ; 
+    echo " task added successfully $id \n" ; 
+
+}
+function mark_progress (&$tasks,$argv , $filename ) { 
+    $new_id = $argv[2] ; 
+        $id = count( $tasks) ;
+        $existe = false ; 
+        for ($i = 0; $i < count($tasks); $i++) {
+            if ($tasks[$i]["id"] == $new_id ){ 
+                $existe = True  ; 
+                $tasks[$i]["status"]= "in-progress" ; 
+                $tasks [$i]["updateAt"] = date("y-m-d H:i:s ")  ; 
+                break  ;
+            }
+            
+        }
+    if ( $existe ){ 
+        file_put_contents ( $filename , json_encode ($tasks,JSON_PRETTY_PRINT)) ; 
+    echo "the task is on proccess " ; 
+    }
+    else { echo "no id found ";} 
+}
+function mark_done (&$tasks,$argv , $filename ) { 
+    $new_id = $argv[2] ; 
+        $id = count( $tasks) ;
+        $existe = false ; 
+        for ($i = 0; $i < count($tasks); $i++) {
+            if ($tasks[$i]["id"] == $new_id ){ 
+                $existe = True  ; 
+                $tasks[$i]["status"]= "done" ; 
+                $tasks[$i]["updateAt"] = date("y-m-d H:i:s ")  ; 
+                break ; 
+            }
+            
+        }
+    if ( $existe ){ 
+        file_put_contents ( $filename , json_encode ($tasks,JSON_PRETTY_PRINT)) ; 
+    echo " the task is done " ; 
+    }
+    else { echo "no id found ";} 
+}
+
+function update (&$tasks , $argv , $filename )  { 
+    $new_id = $argv[2] ; 
+    $new_descrpition = $argv[ 3 ] ; 
+    $existe = False  ; 
+    $priority= null ; 
+    $due =null ; 
+    foreach ( $argv as $arg ){ 
+        if ( strpos ( $arg , "--priority=" === 0 )){ 
+            $priority = explode ('=' ,$arg ) [1] ; 
+        }
+        if (strpos ( $arg ,"--sort=") === 0 )
+{ 
+    $due =explode( '=', $arg)[1] ; 
+}    
+    for ($i = 0; $i < count($tasks); $i++) {
+        if ( $tasks[$i]["id"] == $new_id ){ 
+            $existe = True ;
+            $tasks[$i][ "description"] = $new_descrpition ; 
+            $tasks[$i]["updateAt" ] = date("y-m-d H:i:s ")  ; 
+            if ($priority != null ){ 
+            $tasks[$i][ "priority"] = $priority ; }
+            if ($due != null ) { 
+                $tasks[$i]["due" ] =$due;
+            }
+
+            break ; 
+        }
+    }}
+    if ($existe ) { 
+        file_put_contents ( $filename , json_encode ($tasks,JSON_PRETTY_PRINT)) ; 
+        echo "Task ID $new_id updated successfully.\n";
+    } else { 
+        echo "No task found with ID $new_id.\n";
+}
+
+}
+function delete(&$tasks, $argv, $filename) {
+    $new_id = $argv[2];
+    $existe = false;
+
+    for ($i = 0; $i < count($tasks); $i++) {
+        if ($tasks[$i]["id"] == $new_id) {
+            $existe = true;
+            unset($tasks[$i]);
+            $tasks = array_values($tasks);
+            file_put_contents($filename, json_encode($tasks, JSON_PRETTY_PRINT));
+            echo "Task ID $new_id deleted successfully.\n";
+            break;
+        }
+    }
+
+    if (!$existe) {
+        echo "Task ID $new_id not found.\n";
+    }
+}function list_fun ( &$tasks ) { 
+    $i= 0 ; 
+    foreach ($tasks as $test ) { 
+        $i += 1 ; 
+        echo "--------------------\n" ; 
+        echo "ID: " . $test["id"] . "\n" ; 
+        echo "Description: " . $test["description"] . "\n";
+        echo "Status: " . $test ["status"] . "\n";
+        echo "Created At: " . $test["createdAt"] . "\n";
+        echo "Updated At: " . $test["updateAt"] . "\n";
+        echo "Priority: " . $test["priority"] . "\n";
+        echo "Due: " . $test["due"] . "\n";
+        echo "--------------------\n" ; 
+
+    }
+    if( $i ==  0 ) { 
+        echo "c'est la vide " ;
+    }
+}
+function list_fun_done( &$tasks  ){ 
+    $i = 0 ; 
+    foreach ($tasks as $test ) { 
+      
+        if ($test["status"] =="done"){
+            $i += 1 ; 
+        echo "--------------------\n" ; 
+        echo "ID: " . $test["id"] . "\n" ; 
+        echo "Description: " . $test["description"] . "\n";
+        echo "Status: " . $test ["status"] . "\n";
+        echo "Created At: " . $test["createdAt"] . "\n";
+        echo "Updated At: " . $test["updateAt"] . "\n";
+        echo "Priority: " . $test["priority"] . "\n";
+        echo "Due: " . $test["due"] . "\n";
+        echo "--------------------\n" ; 
+        }
+}
+if( $i ==  0 ) { 
+    echo "c'est la vide " ;
+}
+}
+function list_fun_todo( &$tasks  ){ 
+    $i = 0 ; 
+    foreach ($tasks as $test ) { 
+
+        if ($test["status"] =="todo"){
+            $i += 1 ; 
+        echo "--------------------\n" ; 
+        echo "ID: " . $test["id"] . "\n" ; 
+        echo "Description: " . $test["description"] . "\n";
+        echo "Status: " . $test ["status"] . "\n";
+        echo "Created At: " . $test["createdAt"] . "\n";
+        echo "Updated At: " . $test["updateAt"] . "\n";
+        echo "Priority: " . $test["priority"] . "\n";
+        echo "Due: " . $test["due"] . "\n";
+        echo "--------------------\n" ; 
+        }
+        
+}
+if( $i ==  0 ) { 
+    echo "c'est la vide " ;
+}
+}
+function list_fun_in_progress( &$tasks  ){ 
+    $i = 0 ; 
+    foreach ( $tasks as $test ) { 
+     
+        if ($test["status"] =="in-progress"){
+            $i += 1 ; 
+        echo "--------------------\n" ; 
+        echo "ID: " . $test["id"] . "\n" ; 
+        echo "Description: " . $test["description"] . "\n";
+        echo "Status: " . $test ["status"] . "\n";
+        echo "Created At: " . $test["createdAt"] . "\n";
+        echo "Updated At: " . $test["updateAt"] . "\n";
+        echo "Priority: " . $test["priority"] . "\n";
+        echo "Due: " . $test["due"] . "\n";
+        echo "--------------------\n" ; 
+        }
+}
+if( $i ==  0 ) { 
+    echo "c'est la vide " ;
+}
+}
+
+?> 
