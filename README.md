@@ -18,48 +18,48 @@ it's a simple task tracker in the cli that work with json with CRUD to make my j
 
 To run it like a native command (e.g., task-cli), do:
 ```
-chmod +x ~/task-cli.php
-mv ~/task-cli.php /usr/local/bin/task-cli
+chmod +x task-cli
+mv task-cli /usr/local/bin/task-cli
 ```
 Now you can run it with:
 ```
-task-cli add "Buy groceries"
+./task-cli add "Buy groceries"
 ```
 
 Add a Task
 ```
-php task-cli.php add "My task description"
+./task-cli add "My task description"
 ```
 With optional parameters:
 ```
-php task-cli.php add "Finish report" --priority=high --sort=2025-06-10
+./task-cli add "Finish report" --priority=high --sort=2025-06-10
 ```
 ✏️ Update a Task
 ```
-php task-cli.php update <id> "Updated description" --priority=low --sort=2025-06-20
+./task-cli update <id> "Updated description" --priority=low --sort=2025-06-20
 ```
 ❌ Delete a Task
 ```
-php task-cli.php delete <id>
+./task-cli delete <id>
 ```
 🔄 Mark Task as In Progress
 ```
-php task-cli.php mark-in-progress <id>
+./task-cli mark-in-progress <id>
 ```
 ✅ Mark Task as Done
 ```
-php task-cli.php mark-done <id>
+./task-cli mark-done <id>
 ```
 📋 List All Tasks
 ```
-php task-cli.php list
+./task-cli list
 ```
 
 🎯 List Tasks by Status
 ```
-php task-cli.php list todo
-php task-cli.php list in-progress
-php task-cli.php list done
+./task-cli list todo
+./task-cli list in-progress
+./task-cli list done
 ```
 $ ./task-cli list
 --------------------
